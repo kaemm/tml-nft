@@ -1,0 +1,13 @@
+{
+  "env": {
+    "PORT": "3000",
+    "PG_PORT": 5432,
+    
+    "PG_HOST": "localhost",
+    "PG_USER": "xxx",
+    "PG_PW": "xxx",
+
+    "PG_DB_NFT": "node_nft"
+
+  }
+}

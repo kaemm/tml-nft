@@ -1,2 +1,2 @@
-# tml-nft
-Kaemms NFT stats
+# nft-stats
+TML NFT Statistics (Price Tracker)

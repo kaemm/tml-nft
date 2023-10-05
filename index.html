@@ -1,0 +1,373 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>NFT Statistics</title>
+
+
+    <script src="js/chartjs/chart_4.2.0.umd.min.js"></script>
+    <script src="js/chartjs/chartjs-adapter-date-fns_3.0.0.bundle.min.js"></script>
+    <script src="js/chartjs/dist_chartjs-plugin-annotation_2.1.2.min.js"></script>
+    
+    <!-- chartjs-plugin-zoom -->
+    <script src="js/chartjs/hammerjs_2.0.8.js"></script>
+    <script src="js/chartjs/chartjs-plugin-zoom_2.0.1.min.js"></script>
+
+    <script src="js/getData.js"></script>
+    <script src="js/updateCharts.js"></script>
+
+    <style>
+      table.snapshotTable tbody th {
+        text-align: left;
+      }
+      table.snapshotTable tbody th::after {
+        content: ':';
+      }
+      .chartWrapper {
+        max-width: 1000px;
+      }
+    </style>
+
+  </head>
+  <body>
+    <h1>Current Snapshot</h1>
+    <table class="snapshotTable">
+      <tbody>
+        <tr>
+          <th>Timestamp</th>
+          <td><span id="snapshotDate">...</span> <small>(Europe/Berlin)</small></td>
+        </tr>
+        <tr>
+          <th>Sol-USD</th>
+          <td><span id="snapshotSolUsd">...</span></td>
+        </tr>
+        <tr>
+          <th>Sol-EUR</th>
+          <td><span id="snapshotSolEur">...</span></td>
+        </tr>
+        <tr>
+          <th>Medallion Floor (Sol)</th>
+          <td><span id="medallionFloorSol">...</span></td>
+        </tr>
+        <tr>
+          <th>Medallion Floor (EUR)</th>
+          <td><span id="medallionFloorEur">...</span></td>
+        </tr>
+        <tr>
+          <th>Medallion Floor (USD)</th>
+          <td><span id="medallionFloorUsd">...</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="snapshotTable">
+      <thead>
+        <tr>
+          <th>NFT</th>
+          <th>Floor (Sol)</th>
+          <th>Floor (EUR)</th>
+          <th>Floor (USD)</th>
+          <th>Listed</th>
+          <th>AVG 24 Hrs</th>
+        </tr>
+      </thead>
+      <tbody id="snapshotNftTable">
+
+      </tbody>
+    </table>
+
+    <h1>NFT Statistics</h1>
+    <h2>Select currency</h2>
+    <input id="currencySol" type="radio" name="currency" value="sol">
+      <label for="currencySol">Sol</label>
+    </input>
+    <input id="currencyEur" type="radio" name="currency" value="eur" checked >
+      <label for="currencyEur">EUR</label>
+    </input>
+    <input id="currencyUsd" type="radio" name="currency" value="usd">
+      <label for="currencyUsd">USD</label>
+    </input>
+
+    <h2>Floor (<span class="currencyText">...</span>)</h2>
+    <div class="chartWrapper">
+      <canvas id="chartFloor"></canvas>
+    </div>
+
+    <h2>Total (<span class="currencyText">...</span>)</h2>
+    <div class="chartWrapper">
+      <canvas id="chartTotal"></canvas>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        getData().then((fetchedData) => {
+
+          datasetsFloorSol = [];
+          datasetsFloorEur = [];
+          datasetsFloorUsd = [];
+
+          for (let nft of fetchedData.nfts) {
+            datasetsFloorSol.push({
+              label: nft.symbol_name,
+              data: fetchedData.snapshots,
+              parsing: {
+                yAxisKey: 'nfts.' + nft.id + '.floor_price'
+              },
+            });
+
+            datasetsFloorEur.push({
+              label: nft.symbol_name,
+              data: fetchedData.snapshots,
+              parsing: {
+                yAxisKey: 'nfts.' + nft.id + '.floor_eur'
+              },
+            });
+
+            datasetsFloorUsd.push({
+              label: nft.symbol_name,
+              data: fetchedData.snapshots,
+              parsing: {
+                yAxisKey: 'nfts.' + nft.id + '.floor_usd'
+              },
+            });
+          }
+          
+          
+          const annotations = [];
+          for (let annotation of fetchedData.annotations) {
+            
+            const color = (annotation.color) ? annotation.color : annotation.color; 
+            
+            if (annotation.end == null) {
+              annotations.push({
+                type: 'line',
+                scaleID: 'x',
+                borderWidth: 1,
+                borderColor: color,
+                value: annotation.start,
+                label: {
+                  backgroundColor: color,
+                  rotation: 'auto',
+                  content: annotation.label,
+                  display: true
+                },
+              });
+            } else {
+              annotations.push({
+                type: 'box',
+                backgroundColor: color,
+                borderWidth: 0,
+                xMax: annotation.end,
+                xMin: annotation.start,
+                label: {
+                  drawTime: 'beforeDraw',
+                  display: true,
+                  rotation: '90',
+                  content: annotation.label,
+                }
+              });
+            }
+          }
+          
+          /*
+          const annotation1 = {
+            type: 'line',
+            scaleID: 'x',
+            borderWidth: 1,
+            borderColor: 'black',
+            value: "2023-01-10T23:59:00.000",
+            label: {
+              backgroundColor: 'black',
+              rotation: 'auto',
+              content: 'TML Snapshot',
+              display: true
+            },
+          };
+          const annotation3 = {
+            type: 'box',
+            backgroundColor: 'rgba(255, 245, 157, 0.3)',
+            borderWidth: 0,
+            xMax: "2023-01-10T22:00:00.000",
+            xMin: "2023-01-05T16:00:00.000",
+            label: {
+              drawTime: 'beforeDraw',
+              display: true,
+              rotation: '90',
+              content: 'Claim Medallion (Claim Voucher)',
+            }
+          };
+          const annotation4 = {
+            type: 'box',
+            backgroundColor: 'rgba(16, 185, 129, 0.3)',
+            borderWidth: 0,
+            xMax: "2023-01-12T14:00:00.000",
+            xMin: "2023-01-11T00:00:00.000",
+            label: {
+              drawTime: 'beforeDraw',
+              display: true,
+              rotation: '90',
+              content: 'Link Medallion',
+            }
+          };
+          const annotation6 = {
+            type: 'box',
+            backgroundColor: 'rgba(244, 63, 94, 0.3)',
+            borderWidth: 0,
+            xMax: "2023-01-16T15:00:00.000",
+            xMin: "2023-01-12T15:00:00.000",
+            label: {
+              drawTime: 'beforeDraw',
+              display: true,
+              rotation: '90',
+              content: 'Tomorrowland NFT Global Journey',
+            }
+          };
+          const annotation7 = {
+            type: 'box',
+            backgroundColor: 'rgba(244, 63, 94, 0.3)',
+            borderWidth: 0,
+            xMax: "2023-01-20T15:00:00.000",
+            xMin: "2023-01-17T15:00:00.000",
+            label: {
+              drawTime: 'beforeDraw',
+              display: true,
+              rotation: '90',
+              content: 'Tomorrowland NFT pre-sale',
+            }
+          };*/
+
+          const annotationOptions = {
+            annotations: annotations
+          }
+
+          const zoomOptions = {
+            pan: {
+              enabled: true,
+              mode: 'x'
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true,
+              },
+              mode: 'x',
+            },
+            limits: {
+              x: {min: 'original'},
+              y: {min: 'original'},
+            }
+          }
+
+          chartFloor = new Chart(document.getElementById('chartFloor'), {
+            type: 'line',
+            data: {
+              datasets: []
+            },
+            options: {
+              parsing: {
+                xAxisKey: 'snapshot_date',
+              },
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    unit: 'day',
+                  },
+                }
+              },
+              plugins: {
+                annotation: annotationOptions,
+                zoom: zoomOptions,
+              },
+            }
+          });
+
+          chartTotal = new Chart(document.getElementById('chartTotal'), {
+            type: 'line',
+            data: {
+              datasets: [{
+                label: '...',
+                data: fetchedData.snapshots
+              }]
+            },
+            options: {
+              parsing: {
+                xAxisKey: 'snapshot_date',
+                yAxisKey: '...'
+              },
+              scales: {
+                x: {
+                  type: 'time',
+                }
+              },
+              plugins: {
+                annotation: annotationOptions,
+                zoom: zoomOptions,
+              },
+            }
+          });
+
+          const snapshot = fetchedData.snapshots.at(-1);
+          document.getElementById('snapshotDate').innerHTML = snapshot.snapshot_date;
+          document.getElementById('snapshotSolUsd').innerHTML = snapshot.sol_usd;
+          document.getElementById('snapshotSolEur').innerHTML = snapshot.sol_eur;
+          document.getElementById('medallionFloorSol').innerHTML = snapshot.total_floor;
+          document.getElementById('medallionFloorEur').innerHTML = snapshot.total_floor_eur;
+          document.getElementById('medallionFloorUsd').innerHTML = snapshot.total_floor_usd;
+          
+          for (let nft of fetchedData.nfts) {
+            const row = document.createElement('tr');
+
+            const colNft = document.createElement('th');
+            colNft.appendChild(document.createTextNode(nft.symbol_name));
+            row.appendChild(colNft);
+
+            const colFloorSol = document.createElement('td');
+            colFloorSol.appendChild(document.createTextNode(snapshot.nfts[nft.id].floor_price));
+            row.appendChild(colFloorSol);
+
+            const colFloorEur = document.createElement('td');
+            colFloorEur.appendChild(document.createTextNode(snapshot.nfts[nft.id].floor_eur));
+            row.appendChild(colFloorEur);
+
+            const colFloorUsd = document.createElement('td');
+            colFloorUsd.appendChild(document.createTextNode(snapshot.nfts[nft.id].floor_usd));
+            row.appendChild(colFloorUsd);
+
+            const colListed = document.createElement('td');
+            colListed.appendChild(document.createTextNode(snapshot.nfts[nft.id].listed_count));
+            row.appendChild(colListed);
+
+            const colAvg = document.createElement('td');
+            colAvg.appendChild(document.createTextNode(snapshot.nfts[nft.id].avg_price_24_hrs));
+            row.appendChild(colAvg);
+
+            document.getElementById('snapshotNftTable').appendChild(row);
+
+          }
+
+          for (const el of document.querySelectorAll('input[name="currency"]')) {
+            el.addEventListener('change', (event) => {
+              updateCharts();
+            });
+          }
+
+          // initial update
+          updateCharts();
+
+        });
+      });
+
+    </script>
+
+    <p>
+      <button onclick="
+        chartFloor.resetZoom('none');
+        chartTotal.resetZoom('none');
+      ">Reset charts</button>
+    </p>
+
+
+  </body>
+</html>
