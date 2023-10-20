@@ -40,7 +40,7 @@ addUser();
         // wait 2 seconds to comply with ME rate limits
         await new Promise(r => setTimeout(r, 2000));
         
-        const resSymbol = await axios.get('https://api-mainnet.magiceden.dev/v2/collections/' + row.symbol + '/');
+        const resSymbol = await axios.get('https://api-mainnet.magiceden.dev/v2/collections/' + row.symbol + '/stats');
         await client.query('INSERT INTO snapshots_nfts(snapshot_date, nft, floor_price, listed_count, avg_price_24_hrs, volume_all) VALUES ($1, $2, $3, $4, $5, $6)',
                             [now, row.id, (resSymbol.data.floorPrice / lamportsPerSol), resSymbol.data.listedCount, (resSymbol.data.avgPrice24hr / lamportsPerSol), (resSymbol.data.volumeAll / lamportsPerSol)]);
         await client.query('UPDATE nfts SET floor_price = $1, listed_count = $2, avg_price_24_hrs = $3, volume_all = $4 WHERE id = $5',
