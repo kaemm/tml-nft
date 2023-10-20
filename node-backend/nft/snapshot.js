@@ -37,6 +37,9 @@ addUser();
       //console.log(res.rows);
       const lamportsPerSol = 1000000000;
       for (let row of res.rows) {
+        // wait 2 seconds to comply with ME rate limits
+        await new Promise(r => setTimeout(r, 2000));
+        
         const resSymbol = await axios.get('https://api-mainnet.magiceden.dev/v2/collections/' + row.symbol + '/');
         await client.query('INSERT INTO snapshots_nfts(snapshot_date, nft, floor_price, listed_count, avg_price_24_hrs, volume_all) VALUES ($1, $2, $3, $4, $5, $6)',
                             [now, row.id, (resSymbol.data.floorPrice / lamportsPerSol), resSymbol.data.listedCount, (resSymbol.data.avgPrice24hr / lamportsPerSol), (resSymbol.data.volumeAll / lamportsPerSol)]);
